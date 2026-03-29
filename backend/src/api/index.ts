@@ -11,6 +11,7 @@ import collateralRoutes from "./routes/collateral.js";
 import bankRoutes from "./routes/bank.js";
 import investorRoutes from "./routes/investor.js";
 import aiRoutes from "./routes/ai.js";
+import faucetRoutes from "./routes/faucet.js";
 
 const log = createLogger("api");
 
@@ -28,6 +29,7 @@ export function startApi() {
   app.use("/bank", bankRoutes);
   app.use("/investor", investorRoutes);
   app.use("/ai", aiRoutes);
+  app.use("/faucet", faucetRoutes);
 
   app.listen(config.apiPort, () => {
     log.info(`API server listening on port ${config.apiPort}`);

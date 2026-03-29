@@ -343,7 +343,14 @@ export default function Dashboard() {
                             {fillResult[asset.id]?.success ? (
                               <div className="flex items-center gap-1.5 rounded-lg bg-success/10 px-3 py-1.5">
                                 <CheckCircle2 size={14} className="text-success" />
-                                <span className="font-mono text-[10px] text-success">Filled</span>
+                                <a
+                                  href={`https://testnet-explorer.rayls.com/tx/${fillResult[asset.id].txHash}`}
+                                  target="_blank"
+                                  rel="noopener"
+                                  className="font-mono text-[10px] text-success underline decoration-dotted underline-offset-2 hover:text-success/80"
+                                >
+                                  Filled — {fillResult[asset.id].txHash?.slice(0, 10)}...{fillResult[asset.id].txHash?.slice(-6)}
+                                </a>
                               </div>
                             ) : (
                               <button

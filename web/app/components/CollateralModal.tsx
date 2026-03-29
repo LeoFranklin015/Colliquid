@@ -9,6 +9,8 @@ import { sendTransaction } from "../lib/transactions";
 const MARKETPLACE_ADDRESS = (process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS ||
   "0x58F1e005650c92A90E879c34c846B95dF6e03343") as Address;
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
 interface CollateralData {
   type: string;
   location: string;
@@ -50,6 +52,7 @@ export default function CollateralModal({
   const [buyState, setBuyState] = useState<
     "idle" | "submitting" | "confirmed" | "error"
   >("idle");
+  const [faucetState, setFaucetState] = useState<"idle" | "claiming" | "claimed">("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
   const wallet = useWallet();
@@ -71,6 +74,21 @@ export default function CollateralModal({
   }, [handleKeyDown]);
 
   if (!data) return null;
+
+  const handleFaucetClaim = async () => {
+    if (!wallet.address) return;
+    setFaucetState("claiming");
+    try {
+      await fetch(`${API_BASE}/faucet/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: wallet.address }),
+      });
+      setFaucetState("claimed");
+    } catch {
+      setFaucetState("idle");
+    }
+  };
 
   const handleBuy = async () => {
     if (!wallet.account) {
@@ -265,17 +283,29 @@ export default function CollateralModal({
               )}
 
               {wallet.isConnected && (
-                <div className="mb-4 flex items-center gap-2 rounded-xl bg-success-bg p-3">
-                  <Wallet className="h-4 w-4 text-success" />
-                  <span className="text-[12px] text-success">
-                    {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
-                  </span>
-                  <button
-                    onClick={wallet.disconnect}
-                    className="ml-auto cursor-pointer text-[11px] text-muted hover:text-foreground"
-                  >
-                    Disconnect
-                  </button>
+                <div className="mb-4 rounded-xl bg-success-bg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-success" />
+                    <span className="text-[12px] text-success">
+                      {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
+                    </span>
+                    <button
+                      onClick={handleFaucetClaim}
+                      disabled={faucetState === "claiming" || faucetState === "claimed"}
+                      className="cursor-pointer rounded-lg bg-accent/20 px-3 py-1 text-[11px] font-medium text-accent hover:bg-accent/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {faucetState === "claiming" ? "Claiming..." : "Claim 10 USDR"}
+                    </button>
+                    <button
+                      onClick={wallet.disconnect}
+                      className="ml-auto cursor-pointer text-[11px] text-muted hover:text-foreground"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                  {faucetState === "claimed" && (
+                    <p className="text-[11px] text-success font-medium">10 USDR claimed</p>
+                  )}
                 </div>
               )}
 
