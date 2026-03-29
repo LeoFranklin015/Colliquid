@@ -1,5 +1,8 @@
 import { ethers } from "ethers";
-import { collateralRegistryRead, attestationWrite } from "../../shared/contracts.js";
+import { config } from "../../shared/config.js";
+import { collateralRegistryRead, collateralTokenWrite, collateralTokenRead, marketplaceWrite, attestationWrite } from "../../shared/contracts.js";
+import { publicWallet } from "../../shared/providers.js";
+import { MARKETPLACE_ABI } from "../../shared/abis.js";
 import { createLogger } from "../../shared/logger.js";
 import * as store from "../evalStore.js";
 import { runLeadAnalyst } from "./leadAnalyst.js";
@@ -112,16 +115,27 @@ export async function runEvaluation(evalId: string, collateralId: number): Promi
           avgConfidence,
           summary,
         );
-        const receipt = await tx.wait();
 
-        // Extract UID from Attested event
-        const attestLog = receipt.logs.find((l: any) => {
-          try {
-            return attestationWrite!.interface.parseLog(l)?.name === "Attested";
-          } catch { return false; }
-        });
-        const parsed = attestLog ? attestationWrite.interface.parseLog(attestLog) : null;
-        attestationUid = parsed ? parsed.args[0] : undefined;
+        // Poll for receipt (RPC doesn't support filters)
+        const provider = attestationWrite.runner?.provider;
+        let receipt = null;
+        for (let i = 0; i < 30 && !receipt; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          receipt = await provider?.getTransactionReceipt(tx.hash);
+        }
+
+        if (receipt) {
+          const attestLog = receipt.logs.find((l: any) => {
+            try {
+              return attestationWrite!.interface.parseLog(l)?.name === "Attested";
+            } catch { return false; }
+          });
+          const parsed = attestLog ? attestationWrite.interface.parseLog(attestLog) : null;
+          attestationUid = parsed ? parsed.args[0] : undefined;
+        } else {
+          // Tx sent but receipt not confirmed yet — store tx hash as uid
+          attestationUid = tx.hash;
+        }
 
         log.info(`[${evalId}] Attestation posted: ${attestationUid}`);
       } catch (err: any) {
@@ -132,6 +146,87 @@ export async function runEvaluation(evalId: string, collateralId: number): Promi
     store.completeEvaluation(evalId, finalVerdict, attestationUid);
 
     log.info(`[${evalId}] Final verdict: ${finalVerdict ? "APPROVED" : "REJECTED"}`);
+
+    // Auto-tokenize if approved
+    if (finalVerdict && collateralTokenWrite) {
+      try {
+        log.info(`[${evalId}] Auto-tokenizing collateral #${collateralId}...`);
+
+        const c = await collateralRegistryRead!.getCollateral(collateralId);
+        const loanAmount = c.loanAmount;
+        const interest = c.interest;
+        const timeDays = c.timeDays;
+        const accruedInterest = (loanAmount * BigInt(interest) * BigInt(timeDays)) / (10000n * 365n);
+        const totalValue = loanAmount + accruedInterest;
+
+        const avgScore = Math.round(
+          allResults.reduce((s, r) => s + r.confidence, 0) / allResults.length
+        );
+        const adjustedValue = (totalValue * BigInt(avgScore)) / 100n;
+        const maxTokenCount = 1000n;
+
+        // Mint fractions on privacy chain
+        const tokenizeTx = await collateralTokenWrite.tokenize(BigInt(collateralId), maxTokenCount);
+        const tokenizeReceipt = await tokenizeTx.wait();
+        log.info(`[${evalId}] Tokenized: ${tokenizeReceipt.hash}`);
+
+        // Bridge to public chain
+        const bridgeTx = await collateralTokenWrite.teleportToPublicChain(
+          config.publicChainAddress || publicWallet.address,
+          BigInt(collateralId),
+          maxTokenCount,
+          config.publicChainId,
+          "0x",
+        );
+        const bridgeReceipt = await bridgeTx.wait();
+        log.info(`[${evalId}] Bridged to public chain: ${bridgeReceipt.hash}`);
+
+        // Wait for bridge relay then auto-list on marketplace
+        if (marketplaceWrite && config.publicCollateralTokenAddress) {
+          log.info(`[${evalId}] Waiting 35s for bridge relay...`);
+          await new Promise((r) => setTimeout(r, 35000));
+
+          try {
+            const mirrorAddress = ethers.getAddress(config.publicCollateralTokenAddress);
+            const mirror = new ethers.Contract(mirrorAddress, [
+              "function balanceOf(address,uint256) view returns (uint256)",
+              "function setApprovalForAll(address,bool)",
+              "function isApprovedForAll(address,address) view returns (bool)",
+            ], publicWallet);
+
+            const balance = await mirror.balanceOf(publicWallet.address, collateralId);
+            if (balance > 0n) {
+              // Approve marketplace
+              const approved = await mirror.isApprovedForAll(publicWallet.address, config.marketplaceAddress);
+              if (!approved) {
+                const approveTx = await mirror.setApprovalForAll(config.marketplaceAddress, true);
+                await approveTx.wait();
+              }
+
+              // Get price per token from collateral token
+              const tc = await collateralTokenRead!.getTokenizedCollateral(collateralId);
+
+              // List on marketplace (assetType 2 = ERC1155)
+              const listTx = await marketplaceWrite.list(
+                mirrorAddress,
+                2,
+                BigInt(collateralId),
+                balance,
+                tc.pricePerToken,
+              );
+              const listReceipt = await listTx.wait();
+              log.info(`[${evalId}] Auto-listed on marketplace: ${listReceipt.hash}`);
+            } else {
+              log.warn(`[${evalId}] No fractions on public chain yet — bridge may still be relaying`);
+            }
+          } catch (listErr: any) {
+            log.warn(`[${evalId}] Auto-list failed: ${listErr.message}`);
+          }
+        }
+      } catch (err: any) {
+        log.warn(`[${evalId}] Auto-tokenize failed: ${err.message}`);
+      }
+    }
   } catch (err: any) {
     log.error(`[${evalId}] Evaluation failed:`, err.message);
     store.completeEvaluation(evalId, false);
