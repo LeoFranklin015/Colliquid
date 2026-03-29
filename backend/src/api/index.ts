@@ -10,6 +10,7 @@ import mintRoutes from "./routes/mint.js";
 import collateralRoutes from "./routes/collateral.js";
 import bankRoutes from "./routes/bank.js";
 import investorRoutes from "./routes/investor.js";
+import aiRoutes from "./routes/ai.js";
 
 const log = createLogger("api");
 
@@ -26,6 +27,7 @@ export function startApi() {
   app.use("/collateral", collateralRoutes);
   app.use("/bank", bankRoutes);
   app.use("/investor", investorRoutes);
+  app.use("/ai", aiRoutes);
 
   app.listen(config.apiPort, () => {
     log.info(`API server listening on port ${config.apiPort}`);
