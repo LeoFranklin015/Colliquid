@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: skandha-bundler
+    runtime: docker
+    dockerfilePath: ./account-abstraction/bundler/Dockerfile.render
+    dockerContext: ./account-abstraction/bundler
+    plan: starter
+    region: oregon
+    healthCheckPath: /rpc/
+    envVars:
+      - key: PORT
+        value: 14337

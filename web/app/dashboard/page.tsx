@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { BrainCircuit, Plus } from "lucide-react";
+import { BrainCircuit, Plus, Banknote, Loader2, CheckCircle2 } from "lucide-react";
 import AgentLog from "../components/AgentLog";
 import CollateralModal from "../components/CollateralModal";
 import CreateLoanModal from "../components/CreateLoanModal";
@@ -59,6 +59,8 @@ export default function Dashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Collateral | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [fillingId, setFillingId] = useState<number | null>(null);
+  const [fillResult, setFillResult] = useState<Record<number, { success: boolean; txHash?: string; error?: string }>>({});
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<SortKey>("daysElapsed");
@@ -116,6 +118,26 @@ export default function Dashboard() {
     });
     return result;
   }, [assets, typeFilter, statusFilter, sortBy]);
+
+  async function handleFill(collateralId: number) {
+    setFillingId(collateralId);
+    try {
+      const res = await fetch(`${API_BASE}/bank/fill/${collateralId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Fill failed");
+      }
+      const data = await res.json();
+      setFillResult((prev) => ({ ...prev, [collateralId]: { success: true, txHash: data.txHash } }));
+    } catch (e: any) {
+      setFillResult((prev) => ({ ...prev, [collateralId]: { success: false, error: e.message } }));
+    } finally {
+      setFillingId(null);
+    }
+  }
 
   const totalValue = assets.reduce((s, a) => s + parseFloat(a.totalValue), 0);
   const tokenizedCount = assets.filter((a) => a.tokenized).length;
@@ -298,9 +320,10 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Analyse button */}
-                      {!asset.tokenized && (
-                        <div className="mt-3 flex justify-end">
+                      {/* Action buttons */}
+                      <div className="mt-3 flex items-center justify-end gap-2">
+                        {/* Analyse — only for non-tokenized */}
+                        {!asset.tokenized && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -312,8 +335,40 @@ export default function Dashboard() {
                           >
                             <BrainCircuit size={16} />
                           </button>
-                        </div>
-                      )}
+                        )}
+
+                        {/* Fill — only for tokenized */}
+                        {asset.tokenized && (
+                          <>
+                            {fillResult[asset.id]?.success ? (
+                              <div className="flex items-center gap-1.5 rounded-lg bg-success/10 px-3 py-1.5">
+                                <CheckCircle2 size={14} className="text-success" />
+                                <span className="font-mono text-[10px] text-success">Filled</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleFill(asset.id);
+                                }}
+                                disabled={fillingId === asset.id}
+                                title="Fill — pay all holders principal + yield"
+                                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[11px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+                              >
+                                {fillingId === asset.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Banknote size={14} />
+                                )}
+                                {fillingId === asset.id ? "Filling..." : "Fill"}
+                              </button>
+                            )}
+                            {fillResult[asset.id]?.error && (
+                              <span className="text-[10px] text-warning">{fillResult[asset.id].error}</span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
