@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import ConnectWallet from "./ConnectWallet";
 import TourButton from "./TourButton";
@@ -18,8 +19,9 @@ export default function Navbar() {
       <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-8">
         <Link
           href="/"
-          className="font-mono text-[14px] font-bold tracking-tight text-foreground"
+          className="flex items-center gap-2.5 font-mono text-[14px] font-bold tracking-tight text-foreground"
         >
+          <Image src="/logo.svg" alt="Colliquid" width={24} height={24} />
           COLLIQUID
         </Link>
 

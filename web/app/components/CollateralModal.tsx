@@ -186,7 +186,7 @@ export default function CollateralModal({
           {attestationRows.length > 0 && (
             <div>
               <p className="mb-3 font-mono text-[11px] tracking-[0.15em] text-muted uppercase">
-                AI attestation &mdash; public data
+                AI attestation &mdash; Private data
               </p>
               <div>
                 {attestationRows.map((row, i) => (

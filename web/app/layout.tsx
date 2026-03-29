@@ -28,6 +28,9 @@ export const metadata: Metadata = {
   title: "Colliquid — Pre-Liquidation Collateral Tokenization",
   description:
     "Unlock $1.5 trillion in idle bank collateral. Tokenize pre-liquidation assets on a sovereign privacy chain.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
