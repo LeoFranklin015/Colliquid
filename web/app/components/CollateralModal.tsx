@@ -5,6 +5,7 @@ import { X, Lock, CheckCircle2, Loader2, Wallet } from "lucide-react";
 import { encodeFunctionData, parseEther, type Address } from "viem";
 import { useWallet } from "../lib/wallet-context";
 import { sendTransaction } from "../lib/transactions";
+import ConnectWallet from "./ConnectWallet";
 
 const MARKETPLACE_ADDRESS = (process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS ||
   "0x58F1e005650c92A90E879c34c846B95dF6e03343") as Address;
@@ -250,35 +251,8 @@ export default function CollateralModal({
 
               {/* Wallet connection — required for buying */}
               {!wallet.isConnected && (
-                <div className="mb-4 rounded-xl bg-card-dark p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Wallet className="h-4 w-4 text-white/60" />
-                    <span className="text-[13px] font-medium text-white">
-                      Connect passkey wallet to buy
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => wallet.connect()}
-                      disabled={wallet.isConnecting}
-                      className="flex-1 cursor-pointer rounded-lg bg-white/10 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-white/20 disabled:opacity-50"
-                    >
-                      {wallet.isConnecting ? "Connecting..." : "Login with Passkey"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        const name = prompt("Enter a name for your new passkey wallet:");
-                        if (name) wallet.create(name);
-                      }}
-                      disabled={wallet.isConnecting}
-                      className="flex-1 cursor-pointer rounded-lg border border-white/20 px-4 py-2.5 text-[12px] font-medium text-white/70 hover:bg-white/10 disabled:opacity-50"
-                    >
-                      Create New Wallet
-                    </button>
-                  </div>
-                  {wallet.error && (
-                    <p className="mt-2 text-[11px] text-red-400">{wallet.error}</p>
-                  )}
+                <div className="mb-4">
+                  <ConnectWallet />
                 </div>
               )}
 
