@@ -73,47 +73,48 @@ export default function CollateralModal({
   if (!data) return null;
 
   const handleBuy = async () => {
-    // If we have listing data + a connected wallet, do a real transaction
-    if (data.listingId !== undefined && data.priceWei && wallet.account) {
-      setBuyState("submitting");
-      setBuyError(null);
-      try {
-        const calldata = encodeFunctionData({
-          abi: [
-            {
-              name: "buyFraction",
-              type: "function",
-              stateMutability: "payable",
-              inputs: [
-                { name: "listingId", type: "uint256" },
-                { name: "amount", type: "uint256" },
-              ],
-              outputs: [],
-            },
-          ],
-          functionName: "buyFraction",
-          args: [BigInt(data.listingId), BigInt(shares)],
-        });
-
-        const totalWei = BigInt(data.priceWei) * BigInt(shares);
-        const hash = await sendTransaction(
-          wallet.account,
-          MARKETPLACE_ADDRESS,
-          totalWei,
-          calldata
-        );
-        setTxHash(hash);
-        setBuyState("confirmed");
-      } catch (e: any) {
-        setBuyError(e.message || "Transaction failed");
-        setBuyState("error");
-      }
+    if (!wallet.account) {
+      setBuyError("Connect your passkey wallet first");
+      return;
+    }
+    if (data.listingId === undefined || !data.priceWei) {
+      setBuyError("Missing listing data");
       return;
     }
 
-    // Fallback: simulated buy for demo
     setBuyState("submitting");
-    setTimeout(() => setBuyState("confirmed"), 1200);
+    setBuyError(null);
+    try {
+      const calldata = encodeFunctionData({
+        abi: [
+          {
+            name: "buyFraction",
+            type: "function",
+            stateMutability: "payable",
+            inputs: [
+              { name: "listingId", type: "uint256" },
+              { name: "amount", type: "uint256" },
+            ],
+            outputs: [],
+          },
+        ],
+        functionName: "buyFraction",
+        args: [BigInt(data.listingId), BigInt(shares)],
+      });
+
+      const totalWei = BigInt(data.priceWei) * BigInt(shares);
+      const hash = await sendTransaction(
+        wallet.account,
+        MARKETPLACE_ADDRESS,
+        totalWei,
+        calldata
+      );
+      setTxHash(hash);
+      setBuyState("confirmed");
+    } catch (e: any) {
+      setBuyError(e.message || "Transaction failed");
+      setBuyState("error");
+    }
   };
 
   const attestationRows = [
@@ -229,19 +230,37 @@ export default function CollateralModal({
                 </div>
               </div>
 
-              {/* Wallet status */}
-              {!wallet.isConnected && data.listingId !== undefined && (
-                <div className="mb-4 flex items-center gap-2 rounded-xl bg-background p-3">
-                  <Wallet className="h-4 w-4 text-muted" />
-                  <span className="text-[12px] text-muted">
-                    Connect wallet to buy fractions on-chain
-                  </span>
-                  <button
-                    onClick={() => wallet.connect()}
-                    className="ml-auto cursor-pointer rounded-lg bg-card-dark px-3 py-1.5 text-[11px] font-medium text-white hover:bg-card-dark/80"
-                  >
-                    {wallet.isConnecting ? "Connecting..." : "Connect"}
-                  </button>
+              {/* Wallet connection — required for buying */}
+              {!wallet.isConnected && (
+                <div className="mb-4 rounded-xl bg-card-dark p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wallet className="h-4 w-4 text-white/60" />
+                    <span className="text-[13px] font-medium text-white">
+                      Connect passkey wallet to buy
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => wallet.connect()}
+                      disabled={wallet.isConnecting}
+                      className="flex-1 cursor-pointer rounded-lg bg-white/10 px-4 py-2.5 text-[12px] font-medium text-white hover:bg-white/20 disabled:opacity-50"
+                    >
+                      {wallet.isConnecting ? "Connecting..." : "Login with Passkey"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const name = prompt("Enter a name for your new passkey wallet:");
+                        if (name) wallet.create(name);
+                      }}
+                      disabled={wallet.isConnecting}
+                      className="flex-1 cursor-pointer rounded-lg border border-white/20 px-4 py-2.5 text-[12px] font-medium text-white/70 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Create New Wallet
+                    </button>
+                  </div>
+                  {wallet.error && (
+                    <p className="mt-2 text-[11px] text-red-400">{wallet.error}</p>
+                  )}
                 </div>
               )}
 
@@ -283,7 +302,7 @@ export default function CollateralModal({
 
               <button
                 onClick={handleBuy}
-                disabled={buyState === "submitting" || buyState === "confirmed"}
+                disabled={!wallet.isConnected || buyState === "submitting" || buyState === "confirmed"}
                 className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-medium transition-all ${
                   buyState === "confirmed"
                     ? "bg-success/10 text-success"
@@ -291,13 +310,15 @@ export default function CollateralModal({
                       ? "bg-warning-bg text-warning"
                       : buyState === "submitting"
                         ? "bg-background text-muted"
-                        : "bg-card-dark text-white hover:opacity-80"
-                } ${buyState === "submitting" || buyState === "confirmed" ? "cursor-not-allowed" : ""}`}
+                        : !wallet.isConnected
+                          ? "bg-background text-muted cursor-not-allowed"
+                          : "bg-card-dark text-white hover:opacity-80"
+                } ${!wallet.isConnected || buyState === "submitting" || buyState === "confirmed" ? "cursor-not-allowed" : ""}`}
               >
                 {buyState === "idle" && (
-                  wallet.isConnected && data.listingId !== undefined
+                  wallet.isConnected
                     ? "Buy fractions on-chain"
-                    : "Buy fractions"
+                    : "Connect wallet to buy"
                 )}
                 {buyState === "submitting" && (
                   <>
