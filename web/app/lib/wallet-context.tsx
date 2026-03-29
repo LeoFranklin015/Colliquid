@@ -20,6 +20,7 @@ import { createSmartAccount, restoreSmartAccount } from "./smart-account";
 import { savePasskey } from "./passkey-storage";
 import { addRaylsSubname, getRaylsSubname } from "./ens";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const SESSION_KEY = "colliquid_session";
 
 interface PersistedSession {
@@ -166,6 +167,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           passkeyId: credential.id,
           publicKey: credential.credential.publicKey,
           ensName: resolvedName,
+        });
+
+        // Auto-claim faucet funds for new accounts
+        fetch(`${API_BASE}/faucet/claim`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: addr }),
+        }).catch(() => {
+          // Faucet claim is best-effort — don't block account creation
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Creation failed");

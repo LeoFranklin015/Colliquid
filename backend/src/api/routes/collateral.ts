@@ -33,6 +33,14 @@ router.get("/all/active", async (_req, res) => {
           } catch {}
         }
 
+        // Check if filled (proceeds distributed)
+        let filled = false;
+        if (tokenized && redemptionVaultRead) {
+          try {
+            filled = await redemptionVaultRead.isFilled(id);
+          } catch {}
+        }
+
         return {
           id: Number(id),
           ownerId: c.ownerId,
@@ -52,6 +60,7 @@ router.get("/all/active", async (_req, res) => {
             : 0,
           active: c.active,
           tokenized,
+          filled,
         };
       })
     );

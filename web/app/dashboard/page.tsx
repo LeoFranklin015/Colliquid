@@ -27,6 +27,7 @@ interface Collateral {
   ltv: number;              // percentage
   active: boolean;
   tokenized: boolean;
+  filled: boolean;
 }
 
 function formatValue(ethValue: string): string {
@@ -36,16 +37,18 @@ function formatValue(ethValue: string): string {
   return num.toFixed(2);
 }
 
-type Status = "Active" | "Tokenized";
+type Status = "Active" | "Tokenized" | "Filled";
 
 const statusColor: Record<Status, string> = {
   Active: "text-accent",
   Tokenized: "text-success",
+  Filled: "text-muted",
 };
 
 const statusDot: Record<Status, string> = {
   Active: "bg-accent",
   Tokenized: "bg-success",
+  Filled: "bg-muted",
 };
 
 type SortKey = "daysElapsed" | "totalValue" | "loanAmount";
@@ -102,16 +105,25 @@ export default function Dashboard() {
     return [...types].sort();
   }, [assets]);
 
+  const getStatus = (a: Collateral): Status =>
+    a.filled ? "Filled" : a.tokenized ? "Tokenized" : "Active";
+
+  const statusOrder: Record<Status, number> = { Active: 0, Tokenized: 1, Filled: 2 };
+
   const filtered = useMemo(() => {
     let result = [...assets].filter((a) => a.id > 9);
     if (typeFilter !== "All") {
       result = result.filter((a) => a.colType === typeFilter);
     }
     if (statusFilter !== "All") {
-      if (statusFilter === "Active") result = result.filter((a) => !a.tokenized);
-      if (statusFilter === "Tokenized") result = result.filter((a) => a.tokenized);
+      if (statusFilter === "Active") result = result.filter((a) => !a.tokenized && !a.filled);
+      if (statusFilter === "Tokenized") result = result.filter((a) => a.tokenized && !a.filled);
+      if (statusFilter === "Filled") result = result.filter((a) => a.filled);
     }
+    // Active on top, then Tokenized, then Filled — secondary sort by selected key
     result.sort((a, b) => {
+      const statusDiff = statusOrder[getStatus(a)] - statusOrder[getStatus(b)];
+      if (statusDiff !== 0) return statusDiff;
       if (sortBy === "daysElapsed") return b.daysElapsed - a.daysElapsed;
       if (sortBy === "totalValue") return parseFloat(b.totalValue) - parseFloat(a.totalValue);
       return parseFloat(b.loanAmount) - parseFloat(a.loanAmount);
@@ -132,6 +144,7 @@ export default function Dashboard() {
       }
       const data = await res.json();
       setFillResult((prev) => ({ ...prev, [collateralId]: { success: true, txHash: data.txHash } }));
+      setAssets((prev) => prev.map((a) => a.id === collateralId ? { ...a, filled: true } : a));
     } catch (e: any) {
       setFillResult((prev) => ({ ...prev, [collateralId]: { success: false, error: e.message } }));
     } finally {
@@ -140,8 +153,9 @@ export default function Dashboard() {
   }
 
   const totalValue = assets.reduce((s, a) => s + parseFloat(a.totalValue), 0);
-  const tokenizedCount = assets.filter((a) => a.tokenized).length;
-  const activeCount = assets.filter((a) => !a.tokenized).length;
+  const filledCount = assets.filter((a) => a.filled).length;
+  const tokenizedCount = assets.filter((a) => a.tokenized && !a.filled).length;
+  const activeCount = assets.filter((a) => !a.tokenized && !a.filled).length;
 
   return (
     <>
@@ -167,16 +181,17 @@ export default function Dashboard() {
 
         {/* Stats strip */}
         <div className="mx-auto w-full max-w-[1200px] border-t border-b border-border">
-          <div className="grid grid-cols-4">
+          <div className="grid grid-cols-5">
             {[
               { value: loading ? "..." : `${formatValue(totalValue.toString())} USDR`, label: "Total value" },
               { value: loading ? "..." : String(assets.length), label: "Assets" },
               { value: loading ? "..." : String(activeCount), label: "Active" },
               { value: loading ? "..." : String(tokenizedCount), label: "Tokenized" },
+              { value: loading ? "..." : String(filledCount), label: "Filled" },
             ].map((stat, i) => (
               <div
                 key={stat.label}
-                className={`px-8 py-6 ${i < 3 ? "border-r border-border" : ""}`}
+                className={`px-8 py-6 ${i < 4 ? "border-r border-border" : ""}`}
               >
                 <p className="font-serif text-[24px] font-light tracking-tight text-foreground">
                   {stat.value}
@@ -209,6 +224,7 @@ export default function Dashboard() {
               <option value="All">All statuses</option>
               <option value="Active">Active</option>
               <option value="Tokenized">Tokenized</option>
+              <option value="Filled">Filled</option>
             </select>
 
             <select
@@ -246,7 +262,7 @@ export default function Dashboard() {
               {/* Asset cards grid */}
               <div className="grid gap-3 sm:grid-cols-2">
                 {filtered.map((asset) => {
-                  const status: Status = asset.tokenized ? "Tokenized" : "Active";
+                  const status: Status = getStatus(asset);
 
                   return (
                     <div
@@ -337,8 +353,8 @@ export default function Dashboard() {
                           </button>
                         )}
 
-                        {/* Fill — only for tokenized */}
-                        {asset.tokenized && (
+                        {/* Fill — only for tokenized, not already filled */}
+                        {asset.tokenized && !asset.filled && (
                           <>
                             {fillResult[asset.id]?.success ? (
                               <div className="flex items-center gap-1.5 rounded-lg bg-success/10 px-3 py-1.5">
