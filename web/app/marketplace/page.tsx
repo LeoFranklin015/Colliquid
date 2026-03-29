@@ -4,10 +4,7 @@ import { useState, useMemo } from "react";
 import CollateralModal from "../components/CollateralModal";
 
 interface Listing {
-  id: number;
-  type: string;
-  label: string;
-  location: string;
+  id: string;
   grade: string;
   raise: string;
   raiseNum: number;
@@ -28,10 +25,7 @@ interface Listing {
 
 const listings: Listing[] = [
   {
-    id: 1,
-    type: "Residential",
-    label: "3-bed terraced house",
-    location: "London Zone 2",
+    id: "CLQ-0041",
     grade: "A",
     raise: "£800K",
     raiseNum: 800000,
@@ -50,10 +44,7 @@ const listings: Listing[] = [
     netProceeds: "£800,000",
   },
   {
-    id: 2,
-    type: "Commercial",
-    label: "Office block — 12 units",
-    location: "Manchester",
+    id: "CLQ-0038",
     grade: "A",
     raise: "£1.7M",
     raiseNum: 1700000,
@@ -72,10 +63,7 @@ const listings: Listing[] = [
     netProceeds: "£1,700,000",
   },
   {
-    id: 3,
-    type: "Equipment",
-    label: "CNC milling fleet (x8)",
-    location: "Sheffield",
+    id: "CLQ-0045",
     grade: "B+",
     raise: "£280K",
     raiseNum: 280000,
@@ -94,10 +82,7 @@ const listings: Listing[] = [
     netProceeds: "£280,000",
   },
   {
-    id: 4,
-    type: "Residential",
-    label: "Detached villa",
-    location: "São Paulo",
+    id: "CLQ-0039",
     grade: "A",
     raise: "R$1.2M",
     raiseNum: 1200000,
@@ -116,10 +101,7 @@ const listings: Listing[] = [
     netProceeds: "R$1,200,000",
   },
   {
-    id: 5,
-    type: "Agricultural",
-    label: "120-acre arable farmland",
-    location: "Norfolk",
+    id: "CLQ-0033",
     grade: "A",
     raise: "£1.4M",
     raiseNum: 1400000,
@@ -138,10 +120,7 @@ const listings: Listing[] = [
     netProceeds: "£1,400,000",
   },
   {
-    id: 6,
-    type: "Industrial",
-    label: "Warehouse facility",
-    location: "Birmingham",
+    id: "CLQ-0047",
     grade: "B+",
     raise: "£700K",
     raiseNum: 700000,
@@ -161,24 +140,27 @@ const listings: Listing[] = [
   },
 ];
 
-const allTypes = ["Residential", "Commercial", "Industrial", "Equipment", "Agricultural"];
 const allGrades = ["A", "B+"];
 
 export default function Marketplace() {
   const [selected, setSelected] = useState<Listing | null>(null);
-  const [typeFilter, setTypeFilter] = useState("All");
   const [gradeFilter, setGradeFilter] = useState("All");
+  const [sortBy, setSortBy] = useState<"raiseNum" | "yield" | "timeline">("raiseNum");
 
   const filtered = useMemo(() => {
     let result = [...listings];
-    if (typeFilter !== "All") result = result.filter((l) => l.type === typeFilter);
     if (gradeFilter !== "All") result = result.filter((l) => l.grade === gradeFilter);
+    result.sort((a, b) => {
+      if (sortBy === "raiseNum") return b.raiseNum - a.raiseNum;
+      if (sortBy === "yield") return parseFloat(b.yield) - parseFloat(a.yield);
+      return parseInt(a.timeline) - parseInt(b.timeline);
+    });
     return result;
-  }, [typeFilter, gradeFilter]);
+  }, [gradeFilter, sortBy]);
 
   const toModalData = (l: Listing) => ({
-    type: `${l.type} — ${l.label}`,
-    location: l.location,
+    type: l.id,
+    location: "Withheld",
     grade: l.grade,
     valuation: l.valuation,
     loan: l.loan,
@@ -211,19 +193,6 @@ export default function Marketplace() {
         <div className="mx-auto w-full max-w-[1200px] border-t border-border px-8 py-6">
           <div className="flex items-center gap-3">
             <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="cursor-pointer rounded-lg border border-border bg-card px-3 py-2 text-[13px] text-foreground outline-none"
-            >
-              <option value="All">All types</option>
-              {allTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-
-            <select
               value={gradeFilter}
               onChange={(e) => setGradeFilter(e.target.value)}
               className="cursor-pointer rounded-lg border border-border bg-card px-3 py-2 text-[13px] text-foreground outline-none"
@@ -234,6 +203,16 @@ export default function Marketplace() {
                   Grade {g}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="cursor-pointer rounded-lg border border-border bg-card px-3 py-2 text-[13px] text-foreground outline-none"
+            >
+              <option value="raiseNum">Sort: raise amount</option>
+              <option value="yield">Sort: yield</option>
+              <option value="timeline">Sort: timeline</option>
             </select>
 
             <span className="ml-auto text-[13px] text-muted">
@@ -251,10 +230,10 @@ export default function Marketplace() {
                 onClick={() => setSelected(listing)}
                 className="group cursor-pointer rounded-2xl bg-card p-6 text-left transition-colors hover:bg-card-warm/50"
               >
-                {/* Type + Grade */}
-                <div className="mb-4 flex items-start justify-between">
-                  <span className="font-mono text-[10px] tracking-[0.15em] text-muted uppercase">
-                    {listing.type}
+                {/* ID + Grade */}
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="font-mono text-[12px] text-muted">
+                    {listing.id}
                   </span>
                   <span
                     className={`font-mono text-[11px] font-medium ${
@@ -265,29 +244,22 @@ export default function Marketplace() {
                   </span>
                 </div>
 
-                {/* Label + location */}
-                <p className="text-[15px] font-medium text-foreground">
-                  {listing.label}
-                </p>
-                <p className="mt-0.5 text-[13px] text-muted">
-                  {listing.location}
-                </p>
-
-                {/* Raise */}
-                <p className="mt-4 font-serif text-[28px] font-light tracking-tight text-foreground">
+                {/* Raise — hero of the card */}
+                <p className="font-serif text-[32px] font-light tracking-tight text-foreground">
                   {listing.raise}
                 </p>
-                <p className="mt-0.5 font-mono text-[11px] text-muted">
-                  {listing.shares.toLocaleString()} shares at {listing.pricePerShare}
+                <p className="mt-1 font-mono text-[11px] text-muted">
+                  {listing.shares.toLocaleString()} shares at{" "}
+                  {listing.pricePerShare}
                 </p>
 
-                {/* Stats */}
-                <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4">
+                {/* Key metrics */}
+                <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border pt-4">
                   <div>
                     <p className="font-mono text-[9px] tracking-[0.15em] text-muted uppercase">
                       LTV
                     </p>
-                    <p className="font-mono text-[13px] text-foreground">
+                    <p className="font-mono text-[14px] text-foreground">
                       {listing.ltv}
                     </p>
                   </div>
@@ -295,7 +267,7 @@ export default function Marketplace() {
                     <p className="font-mono text-[9px] tracking-[0.15em] text-muted uppercase">
                       Yield
                     </p>
-                    <p className="font-mono text-[13px] text-foreground">
+                    <p className="font-mono text-[14px] text-foreground">
                       {listing.yield}
                     </p>
                   </div>
@@ -303,14 +275,34 @@ export default function Marketplace() {
                     <p className="font-mono text-[9px] tracking-[0.15em] text-muted uppercase">
                       Timeline
                     </p>
-                    <p className="font-mono text-[13px] text-foreground">
+                    <p className="font-mono text-[14px] text-foreground">
                       {listing.timeline}
                     </p>
                   </div>
                 </div>
 
+                {/* Default + Legal */}
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="font-mono text-[9px] tracking-[0.15em] text-muted uppercase">
+                      Default
+                    </p>
+                    <p className="font-mono text-[13px] text-foreground">
+                      {listing.defaultDays}d
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[9px] tracking-[0.15em] text-muted uppercase">
+                      Valuation
+                    </p>
+                    <p className="font-mono text-[13px] text-foreground">
+                      {listing.valuation}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Issuer + attestation */}
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
                   <span className="font-mono text-[11px] text-muted">
                     {listing.issuer}
                   </span>
@@ -333,9 +325,9 @@ export default function Marketplace() {
         <div className="border-t border-border">
           <div className="mx-auto w-full max-w-[1200px] px-8 py-10">
             <p className="text-[13px] leading-relaxed text-muted">
-              All listings are AI-attested on Rayls. Borrower identities
-              protected under GDPR/LGPD. Property addresses withheld. Issuers
-              verified. Settlement via atomic DvP.
+              All listings AI-attested on Rayls. Asset type, location, and
+              borrower identity withheld. Only financial metrics, legal status,
+              and verified issuer are disclosed. Settlement via atomic DvP.
             </p>
           </div>
         </div>

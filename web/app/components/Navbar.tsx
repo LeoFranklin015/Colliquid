@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ConnectWallet from "./ConnectWallet";
 
 const links = [
   { href: "/dashboard", label: "Portfolio" },
@@ -29,14 +30,16 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={`cursor-pointer text-[14px] transition-colors ${
-                  isActive ? "text-foreground" : "text-muted hover:text-foreground"
+                  isActive
+                    ? "text-foreground"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 {link.label}
               </Link>
             );
           })}
-          <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+          <ConnectWallet />
         </div>
       </div>
     </nav>

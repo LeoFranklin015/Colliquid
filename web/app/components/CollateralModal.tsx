@@ -28,7 +28,8 @@ interface CollateralModalProps {
 
 const protectedFields = [
   { label: "Borrower identity", reason: "GDPR protected" },
-  { label: "Exact address", reason: "GDPR protected" },
+  { label: "Asset type", reason: "Identification risk" },
+  { label: "Location / address", reason: "Identification risk" },
   { label: "Loan history", reason: "Banking secrecy" },
   { label: "Legal correspondence", reason: "Confidential" },
 ];
@@ -68,8 +69,6 @@ export default function CollateralModal({
   const total = shares * parseInt(data.sharePrice.replace(/[^0-9]/g, ""));
 
   const attestationRows = [
-    { label: "Asset type", value: data.type },
-    { label: "Location", value: data.location },
     { label: "AI valuation", value: data.valuation },
     { label: "Outstanding loan", value: data.loan },
     { label: "LTV ratio", value: data.ltv },
@@ -93,7 +92,7 @@ export default function CollateralModal({
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-[17px] font-medium text-foreground">
-                {data.type} &middot; {data.location}
+                {data.type}
               </h2>
               <span className="font-mono text-[12px] font-medium text-accent">
                 {data.grade}

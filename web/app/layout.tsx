@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import Navbar from "./components/Navbar";
+import { WalletProvider } from "./lib/wallet-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,8 +38,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Navbar />
-        <main className="flex flex-1 flex-col">{children}</main>
+        <WalletProvider>
+          <Navbar />
+          <main className="flex flex-1 flex-col">{children}</main>
+        </WalletProvider>
       </body>
     </html>
   );

@@ -69,18 +69,20 @@ const privateData = [
   { field: "Borrower name", reason: "GDPR / LGPD \u2014 personal identifier" },
   { field: "National ID", reason: "Strongest personal identifier" },
   { field: "Exact property address", reason: "Directly identifies borrower" },
+  { field: "Property type", reason: "Category could narrow identification" },
+  { field: "General area", reason: "Geography narrows identity pool" },
   { field: "Full loan history", reason: "Banking secrecy law" },
   { field: "Legal correspondence", reason: "Client confidential" },
 ];
 
 const publicData = [
-  { field: "Property type", reason: "Category only \u2014 no identity risk" },
-  { field: "General area", reason: "Not granular enough to re-identify" },
   { field: "AI valuation", reason: "Aggregate estimate" },
   { field: "LTV ratio", reason: "Standard investor metric" },
   { field: "Default days", reason: "Legal trigger confirmation" },
   { field: "Enforcement status", reason: "Binary \u2014 underway or not" },
+  { field: "Expected timeline", reason: "Investor planning information" },
   { field: "Issuer identity", reason: "Verified institution" },
+  { field: "AI grade", reason: "Risk assessment summary" },
 ];
 
 export default function Home() {
