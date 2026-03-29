@@ -32,29 +32,8 @@ They also can't tokenize it publicly because **borrower privacy laws** (GDPR, LG
 
 ## How It Works
 
-```
-  PRIVATE NODE (Bank Only)              PUBLIC CHAIN (Investors)
-  ========================              ========================
+<img width="1160" height="888" alt="image" src="https://github.com/user-attachments/assets/000051c9-be26-497e-b972-403bce7f511a" />
 
-  1. Bank registers loan          -->   5. Sanitized ERC-1155 fractions
-     - Borrower ID (encrypted)          appear on public marketplace
-     - Loan amount, terms               - No borrower data
-     - Property description              - Only: yield, LTV, duration
-     - Full sensitive details
-                                         6. Investors buy fractions
-  2. AI Swarm evaluates (5 agents)       from $1,000 minimum
-     - Lead Analyst
-     - Compliance Officer          -->   7. AI attestation on-chain
-     - Valuation Auditor                 - Agent verdicts only
-     - Risk Assessor                     - No private data
-     - Privacy Guardian
-                                         8. Bank fills collateral
-  3. Auto-tokenize if approved           - USDR + yield distributed
-     - Mint 1000 ERC-1155 fractions      to all fraction holders
-     - Bridge to public chain
-
-  4. Auto-list on marketplace
-```
 
 ### The 5-Step Pipeline (Fully Automated)
 
