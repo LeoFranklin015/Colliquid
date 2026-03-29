@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
 import Navbar from "./components/Navbar";
 import { WalletProvider } from "./lib/wallet-context";
+import { NextStepProvider, NextStep } from "nextstepjs";
+import { tours } from "./lib/tour-steps";
+import TourCard from "./components/TourCard";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,8 +42,12 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <WalletProvider>
-          <Navbar />
-          <main className="flex flex-1 flex-col">{children}</main>
+          <NextStepProvider>
+            <NextStep steps={tours} cardComponent={TourCard}>
+              <Navbar />
+              <main className="flex flex-1 flex-col">{children}</main>
+            </NextStep>
+          </NextStepProvider>
         </WalletProvider>
       </body>
     </html>

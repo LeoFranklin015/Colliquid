@@ -24,12 +24,18 @@ router.get("/all/active", async (_req, res) => {
         const accruedInterest = (loanAmount * BigInt(interest) * BigInt(timeDays)) / (10000n * 365n);
         const totalValue = loanAmount + accruedInterest;
 
-        // Check if already tokenized
+        // Check if already tokenized and filled
         let tokenized = false;
+        let filled = false;
         if (collateralTokenRead) {
           try {
             const tc = await collateralTokenRead.getTokenizedCollateral(id);
             tokenized = tc.tokenized;
+          } catch {}
+        }
+        if (tokenized && redemptionVaultRead) {
+          try {
+            filled = await redemptionVaultRead.isFilled(id);
           } catch {}
         }
 

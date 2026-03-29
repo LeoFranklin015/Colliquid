@@ -36,9 +36,10 @@ function formatETH(val: string): string {
   return `${num.toFixed(4)} USDR`;
 }
 
-function ListingCard({ listing, onClick }: { listing: PublicListing; onClick: () => void }) {
+function ListingCard({ listing, onClick, id }: { listing: PublicListing; onClick: () => void; id?: string }) {
   return (
     <button
+      id={id}
       onClick={onClick}
       className="group cursor-pointer rounded-2xl bg-card p-6 text-left transition-colors hover:bg-card-warm/50"
     >
@@ -245,7 +246,7 @@ export default function Marketplace() {
           )}
 
           {!loading && !error && (
-            <div className="space-y-10">
+            <div id="listings-grid" className="space-y-10">
               {/* Active Listings */}
               <div>
                 <div className="mb-4 flex items-center gap-2">
@@ -259,8 +260,8 @@ export default function Marketplace() {
                 </div>
                 {activeListings.length > 0 ? (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {activeListings.map((listing) => (
-                      <ListingCard key={listing.listingId} listing={listing} onClick={() => setSelected(listing)} />
+                    {activeListings.map((listing, i) => (
+                      <ListingCard key={listing.listingId} listing={listing} onClick={() => setSelected(listing)} id={i === 0 ? "first-listing-card" : undefined} />
                     ))}
                   </div>
                 ) : (

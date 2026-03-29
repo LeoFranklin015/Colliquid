@@ -35,16 +35,22 @@ export default function AIPage() {
         </div>
 
         <div className="space-y-6">
-          <TriggerPanel onEvaluationStarted={handleEvaluationStarted} />
+          <div id="trigger-panel">
+            <TriggerPanel onEvaluationStarted={handleEvaluationStarted} />
+          </div>
 
           {activeEvals.length > 0 && (
-            <LiveFeed
-              evaluations={activeEvals}
-              onComplete={handleEvaluationComplete}
-            />
+            <div id="live-feed">
+              <LiveFeed
+                evaluations={activeEvals}
+                onComplete={handleEvaluationComplete}
+              />
+            </div>
           )}
 
-          <HistoryTable key={refreshKey} />
+          <div id="history-table">
+            <HistoryTable key={refreshKey} />
+          </div>
         </div>
       </div>
     </div>

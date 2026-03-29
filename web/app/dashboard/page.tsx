@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { BrainCircuit, Plus, Banknote, Loader2, CheckCircle2 } from "lucide-react";
+import { BrainCircuit, Plus, Banknote, Loader2, CheckCircle2, HelpCircle } from "lucide-react";
+import { useNextStep } from "nextstepjs";
 import AgentLog from "../components/AgentLog";
 import CollateralModal from "../components/CollateralModal";
 import CreateLoanModal from "../components/CreateLoanModal";
@@ -54,6 +55,7 @@ const statusDot: Record<Status, string> = {
 type SortKey = "daysElapsed" | "totalValue" | "loanAmount";
 
 export default function Dashboard() {
+  const { startNextStep } = useNextStep();
   const [assets, setAssets] = useState<Collateral[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -170,17 +172,27 @@ export default function Dashboard() {
               Admin Portfolio
             </h1>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex cursor-pointer items-center gap-2 rounded-xl bg-card-dark px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-card-dark/80"
-          >
-            <Plus className="h-4 w-4" />
-            Register Collateral
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => startNextStep("bank-portfolio")}
+              title="Start guided tour"
+              className="cursor-pointer rounded-lg border border-border p-2 text-muted transition-colors hover:text-foreground hover:border-foreground/20"
+            >
+              <HelpCircle size={18} />
+            </button>
+            <button
+              id="register-btn"
+              onClick={() => setShowCreateModal(true)}
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-card-dark px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-card-dark/80"
+            >
+              <Plus className="h-4 w-4" />
+              Register Collateral
+            </button>
+          </div>
         </div>
 
         {/* Stats strip */}
-        <div className="mx-auto w-full max-w-[1200px] border-t border-b border-border">
+        <div id="stats-strip" className="mx-auto w-full max-w-[1200px] border-t border-b border-border">
           <div className="grid grid-cols-5">
             {[
               { value: loading ? "..." : `${formatValue(totalValue.toString())} USDR`, label: "Total value" },
@@ -260,7 +272,7 @@ export default function Dashboard() {
           {!loading && !error && (
             <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
               {/* Asset cards grid */}
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div id="asset-grid" className="grid gap-3 sm:grid-cols-2">
                 {filtered.map((asset) => {
                   const status: Status = getStatus(asset);
 
@@ -287,6 +299,11 @@ export default function Dashboard() {
                           {attestedMap[asset.id] && (
                             <span className="ml-2 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">
                               Attested
+                            </span>
+                          )}
+                          {asset.filled && (
+                            <span className="ml-1 rounded-full bg-muted/10 px-2 py-0.5 text-[10px] font-medium text-muted">
+                              Filled
                             </span>
                           )}
                         </div>
@@ -341,6 +358,7 @@ export default function Dashboard() {
                         {/* Analyse — only for non-tokenized */}
                         {!asset.tokenized && (
                           <button
+                            id={filtered.filter(a => !a.tokenized).indexOf(asset) === 0 ? "first-analyse-btn" : undefined}
                             onClick={(e) => {
                               e.stopPropagation();
                               const fn = (window as any).__agentLogStartAnalysis;
@@ -353,7 +371,7 @@ export default function Dashboard() {
                           </button>
                         )}
 
-                        {/* Fill — only for tokenized, not already filled */}
+                        {/* Fill — only for tokenized and not already filled */}
                         {asset.tokenized && !asset.filled && (
                           <>
                             {fillResult[asset.id]?.success ? (
@@ -406,7 +424,7 @@ export default function Dashboard() {
               </div>
 
               {/* Agent Log */}
-              <div className="h-[600px] lg:sticky lg:top-20">
+              <div id="agent-log" className="h-[600px] lg:sticky lg:top-20">
                 <AgentLog />
               </div>
             </div>

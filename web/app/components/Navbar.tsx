@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ConnectWallet from "./ConnectWallet";
+import TourButton from "./TourButton";
 
 const links = [
   { href: "/dashboard", label: "Admin Portfolio" },
@@ -39,6 +40,7 @@ export default function Navbar() {
               </Link>
             );
           })}
+          <TourButton />
           <ConnectWallet />
         </div>
       </div>
