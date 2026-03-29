@@ -47,10 +47,14 @@ export const ERC1155_ABI = [
 ];
 
 export const ATTESTATION_ABI = [
-  "function attest(address token, bool approved, string reason, uint256 score)",
-  "function getAttestations(address token) view returns (tuple(address attester, address token, bool approved, string reason, uint256 score, uint256 timestamp)[])",
-  "function getAttestationCount(address token) view returns (uint256)",
-  "event Attested(address indexed token, address indexed attester, bool approved, uint256 score)",
+  "function attest(uint256 collateralId, bool approved, uint8 agentCount, uint8 approvalCount, uint16 avgConfidence, string summary) returns (bytes32)",
+  "function revoke(bytes32 uid)",
+  "function getAttestation(bytes32 uid) view returns (tuple(bytes32 uid, uint256 collateralId, bool approved, uint8 agentCount, uint8 approvalCount, uint16 avgConfidence, string summary, address attester, uint64 timestamp, bool revoked))",
+  "function getAttestationsByCollateral(uint256 collateralId) view returns (bytes32[])",
+  "function getAttestationCount(uint256 collateralId) view returns (uint256)",
+  "function isAttested(uint256 collateralId) view returns (bool)",
+  "event Attested(bytes32 indexed uid, uint256 indexed collateralId, bool approved, uint16 avgConfidence)",
+  "event Revoked(bytes32 indexed uid)",
 ];
 
 export const MARKETPLACE_ABI = [
