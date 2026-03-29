@@ -21,6 +21,7 @@ export async function sendTransaction(
         data: data ?? "0x",
       },
     ],
+    callGasLimit: 500_000n,
   });
 
   const receipt = await bundlerClient.waitForUserOperationReceipt({

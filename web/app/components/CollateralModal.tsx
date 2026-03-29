@@ -337,7 +337,7 @@ export default function CollateralModal({
 
               {txHash && (
                 <p className="mt-2 text-center font-mono text-[11px] text-muted">
-                  TX: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+                  TX: {txHash}
                 </p>
               )}
 
